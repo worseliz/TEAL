@@ -1,0 +1,56 @@
+\section{Introduction}
+Tool for Economic AnaLysis is a RAVEN plug-in for performing cash flow analyses. 
+
+\section{Installation}
+These installation instructions assume that you have already successfully installed RAVEN. For RAVEN Installation instructions, visit https://github.com/idaholab/raven/wiki.
+To install TEAL as a plug-in for RAVEN:
+\begin{itemize}
+    \item Navigate to raven/plugins
+    \item Clone TEAL using git Clone
+    \item Register TEAL plugin with raven: raven/scripts/install\_plugins.py -s TEAL
+    \item To update TEAL, navigate to raven/plugins/TEAL and use git pull
+\end{itemize}
+
+\section{Command Line Basics}
+Hopefully, through the installation process, you will have become familiar with some basics of navigating the command window. 
+
+cd : Change Directory.
+    Use this command to navigate to different folders. Ex. cd Documents/path/to/file
+    You can navigate backwards in the directory by using cd .. Ex. cd ../../folder
+
+ls : List Directory.
+    Displays the names of files contained in the current directory. 
+
+./ : Execute
+
+conda activate raven\_libraries : This is a raven specific command which will allow you to use raven and its associated dependencies in the terminal.
+It is good practice to activate these libraries before you start using TEAL. 
+Execute a TEAL file:
+To execute a TEAL program in conjunction with RAVEN, you must type the filepath to raven\_framework, followed by the RAVEN xml filename. The RAVEN file is the file that starts and ends with the <Simulation> block.
+    ~/Documents/path/to/raven/raven\_framework CashFlow\_file\_name.xml 
+
+\section{Getting Started}
+Now that you know the basics, let's get started with the simulation of a single cash flow. We will begin by writing the TEAL (or <Economics>) block and then create the RAVEN (or <Simulation>) block.
+
+Extensive Markup language (XML) is a language for encoding documents in a format that is both human-readable and machine readable. In the context of RAVEN, the XML format essentially groups and labels the data, variables and options required for the simulation.
+
+Economics block:
+This is the outer block of the TEAL file, which contains all other blocks required to run TEAL. Remember to add a second tag to close the block at the end. You can use an option here to specify the amount of output you want to see as the program runs.
+
+
+\begin{lstlisting}[style=XML,morekeywords={class}]
+    <Economics>
+
+    </Economics>
+\end{lstlisting}
+
+Global block:
+This block will contain information that applies to every component in the simulation. 
+\begin{lstlisting}[style=XML,morekeywords={class}]
+    <Economics>
+        <Global>
+        
+        </Global>
+    </Economics>
+\end{lstlisting}
+
