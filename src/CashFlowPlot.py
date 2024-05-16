@@ -118,16 +118,31 @@ class CashFlowPlot(PlotPlugin):
     # Color setting by comp names
     defaultStartColor = 60 # default starting color #. 256 selections in total
     defaultEndColor = 240 # default ending color #. 256 selections in total
-    colorLib = ['Reds', 'Blues', 'Greens', 'Purples', 'Oranges', 'ocean'] # color library is changable
+    hatchLib = [None, '\\\\', '..', 'xx', '--', 'oo', '++', '**', 'OO']
+    colorLib = ['Reds', 'Blues', 'Greens', 'Purples', 'ocean'] # color library is changable
+    # edit sotogj 5/16/2024: removed Oranges because they were too similar to Reds
+    # checking if we need to repeat the color sequence, if so adding hatching for the second round
+    nColorLib = len(colorLib)
+    colorLib *= int(np.ceil(len(compCount)/nColorLib))
     compColor = []
+    compHatch = []
     for i, _ in enumerate(compCount):
       _cmap = plt.get_cmap(colorLib[i])
       _rawCmapList = [_cmap(k) for k in range(_cmap.N)]
       compColor += _rawCmapList[defaultEndColor:defaultStartColor:-(defaultEndColor-defaultStartColor)//compCount[i]]
+      # handle hatching
+      posInSequence = int(np.floor(i/nColorLib))
+      if posInSequence>0:
+        compHatch.append(hatchLib[posInSequence])
+      else:
+        compHatch.extend([None]*compCount[i])
     compColor = pd.DataFrame(compColor).set_axis([cumCashFlow.index.tolist()]).T
+    compHatch = pd.DataFrame(compHatch).set_axis([cumCashFlow.index.tolist()]).T
     cumCashFlow = cumCashFlow.sort_values(ascending=True)
     compColor = compColor[cumCashFlow.index[:len(cumCashFlow)]]
     compColor = compColor.T.values.tolist()
+    compHatch = compHatch[cumCashFlow.index[:len(cumCashFlow)]]
+    compHatch = compHatch.T.values.tolist()
     negVar = len(list(filter(lambda lableLoc: (lableLoc < 0), cumCashFlow))) # count # of outflows
     posVar = len(list(filter(lambda lableLoc: (lableLoc >= 0), cumCashFlow))) # count # of inflows
 
@@ -141,19 +156,21 @@ class CashFlowPlot(PlotPlugin):
     for i, _ in enumerate(cumCashFlow[0:negVar]):
       if i == 0:
         ax1.bar(dfYear['cfYears'], dfCashFlow.iloc[:,i], widthFlowbar, color = compColor[i],
-          label = labels.iloc[i,0], edgecolor='white')
+          label = labels.iloc[i,0], edgecolor='white', hatch = compHatch[i])
       else:
         ax1.bar(dfYear['cfYears'], dfCashFlow.iloc[:,i], widthFlowbar, color = compColor[i],
-          bottom = dfCashFlow.iloc[:,0:i-1].sum(axis=1), label = labels.iloc[i,0], edgecolor='white')
+          bottom = dfCashFlow.iloc[:,0:i].sum(axis=1), label = labels.iloc[i,0], edgecolor='white',
+          hatch = compHatch[i])
 
     for i, _ in enumerate(cumCashFlow[negVar:negVar+posVar]):
       if i == 0:
         ax1.bar(dfYear['cfYears'], dfCashFlow.iloc[:,i+negVar], widthFlowbar,
-          color = compColor[i+negVar], label = labels.iloc[i+negVar,0], edgecolor='white')
+          color = compColor[i+negVar], label = labels.iloc[i+negVar,0], edgecolor='white',
+          hatch = compHatch[i+negVar])
       else:
         ax1.bar(dfYear['cfYears'], dfCashFlow.iloc[:,i+negVar], widthFlowbar,
           color = compColor[i+negVar], bottom = dfCashFlow.iloc[:,negVar:negVar+i].sum(axis=1),
-          label = labels.iloc[i+negVar,0], edgecolor='white')
+          label = labels.iloc[i+negVar,0], edgecolor='white', hatch = compHatch[i+negVar])
 
     # grid
     ax1.set_axisbelow(True)
@@ -179,7 +196,8 @@ class CashFlowPlot(PlotPlugin):
     _, ax1 = plt.subplots(1, figsize = (25,12))
     for i, _ in enumerate(cumCashFlow):
       ax1.bar(labelLoc + widthCumBar * (i - (len(cumCashFlow) + 1) / 2), dfCashFlow.iloc[:,i],
-        widthCumBar, color = compColor[i], label = labels.iloc[i,0], edgecolor='white')
+        widthCumBar, color = compColor[i], label = labels.iloc[i,0], edgecolor='white',
+        hatch = compHatch[i])
     #grid
     ax1.set_axisbelow(True)
     ax1.yaxis.grid(color='gray', linestyle='dashed', alpha=0.7)
@@ -221,9 +239,16 @@ class CashFlowPlot(PlotPlugin):
       pieIn, _ = ax2.pie(cumIn, radius=radiusPie-widthPie, colors = compColor[-posVar:]+[(0, 0, 0, 0)], startangle=90)
       ax1.text(-0.55,0.86,"Outflows - Inflows = {}".format(f'${abs(diff): 1.3e}'),
         color="black",fontsize=16, fontweight='bold')
+    for outerWedge, hatch in zip(pieOut,compHatch[0:negVar]):
+      outerWedge.set_hatch(hatch[0])
+      outerWedge.set_edgecolor('white')
+    for innerWedge, hatch in zip(pieIn,compHatch[-posVar:]):
+      innerWedge.set_hatch(hatch[0])
+      innerWedge.set_edgecolor('white')
 
-    ax1.legend(labels.iloc[0:negVar,0], loc='lower right',fontsize = 15)
-    ax2.legend(labels.iloc[-posVar:,0], loc='lower left',fontsize = 15)
+
+    ax1.legend(labels.iloc[0:negVar,0], loc='lower right',fancybox=True, fontsize = 15)
+    ax2.legend(labels.iloc[-posVar:,0], loc='lower left',fancybox=True, fontsize = 15)
     plt.setp([pieOut, pieIn], width=widthPie, edgecolor='white')
     plt.title('Cumulative Inflows vs. Outflows from Project Year {} to {}'.format(startYear, endYear),
       y=1, fontsize = 20, fontweight='bold')
